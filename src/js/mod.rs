@@ -62,10 +62,12 @@ pub(crate) mod internal {
             })
         }
 
+        #[inline]
         unsafe fn from_wrapper(h: raw::Local) -> Self {
             FunctionKernel(mem::transmute(neon_runtime::fun::get_kernel(h)))
         }
 
+        #[inline]
         fn as_ptr(self) -> *mut c_void {
             unsafe { mem::transmute(self.0) }
         }
@@ -84,12 +86,14 @@ pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F)
 }
 
 impl<T: Value> SuperType<T> for JsValue {
+    #[inline]
     fn upcast_internal(v: T) -> JsValue {
         JsValue(v.to_raw())
     }
 }
 
 impl<T: Object> SuperType<T> for JsObject {
+    #[inline]
     fn upcast_internal(v: T) -> JsObject {
         JsObject(v.to_raw())
     }
@@ -97,10 +101,12 @@ impl<T: Object> SuperType<T> for JsObject {
 
 /// The trait shared by all JavaScript values.
 pub trait Value: ValueInternal {
+    #[inline]
     fn to_string<'a, T: Scope<'a>>(self, _: &mut T) -> JsResult<'a, JsString> {
         build(|out| { unsafe { neon_runtime::convert::to_string(out, self.to_raw()) } })
     }
 
+    #[inline]
     fn as_value<'a, T: Scope<'a>>(self, _: &mut T) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.to_raw())
     }
@@ -131,18 +137,22 @@ pub struct JsValue(raw::Local);
 impl Value for JsValue { }
 
 impl Managed for JsValue {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsValue(h) }
 }
 
 impl ValueInternal for JsValue {
+    #[inline]
     fn is_typeof<Other: Value>(_: Other) -> bool {
         true
     }
 }
 
 unsafe impl This for JsValue {
+    #[inline]
     fn as_this(h: raw::Local) -> Self {
         JsValue(h)
     }
@@ -167,6 +177,7 @@ impl<'a> Handle<'a, JsValue> {
 }
 
 impl JsValue {
+    #[inline]
     pub(crate) fn new_internal<'a>(value: raw::Local) -> Handle<'a, JsValue> {
         Handle::new_internal(JsValue(value))
     }
@@ -178,10 +189,12 @@ impl JsValue {
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
+    #[inline]
     pub fn new<'a>() -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal()
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>() -> Handle<'a, JsUndefined> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -194,12 +207,15 @@ impl JsUndefined {
 impl Value for JsUndefined { }
 
 impl Managed for JsUndefined {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsUndefined(h) }
 }
 
 unsafe impl This for JsUndefined {
+    #[inline]
     fn as_this(_: raw::Local) -> Self {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -210,6 +226,7 @@ unsafe impl This for JsUndefined {
 }
 
 impl ValueInternal for JsUndefined {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_undefined(other.to_raw()) }
     }
@@ -221,10 +238,12 @@ impl ValueInternal for JsUndefined {
 pub struct JsNull(raw::Local);
 
 impl JsNull {
+    #[inline]
     pub fn new<'a>() -> Handle<'a, JsNull> {
         JsNull::new_internal()
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>() -> Handle<'a, JsNull> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -237,12 +256,15 @@ impl JsNull {
 impl Value for JsNull { }
 
 impl Managed for JsNull {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsNull(h) }
 }
 
 impl ValueInternal for JsNull {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_null(other.to_raw()) }
     }
@@ -254,10 +276,12 @@ impl ValueInternal for JsNull {
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(_: &mut T, b: bool) -> Handle<'a, JsBoolean> {
         JsBoolean::new_internal(b)
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>(b: bool) -> Handle<'a, JsBoolean> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -266,6 +290,7 @@ impl JsBoolean {
         }
     }
 
+    #[inline]
     pub fn value(self) -> bool {
         unsafe {
             neon_runtime::primitive::boolean_value(self.to_raw())
@@ -276,12 +301,15 @@ impl JsBoolean {
 impl Value for JsBoolean { }
 
 impl Managed for JsBoolean {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsBoolean(h) }
 }
 
 impl ValueInternal for JsBoolean {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_boolean(other.to_raw()) }
     }
@@ -295,24 +323,29 @@ pub struct JsString(raw::Local);
 impl Value for JsString { }
 
 impl Managed for JsString {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsString(h) }
 }
 
 impl ValueInternal for JsString {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_string(other.to_raw()) }
     }
 }
 
 impl JsString {
+    #[inline]
     pub fn size(self) -> isize {
         unsafe {
             neon_runtime::string::utf8_len(self.to_raw())
         }
     }
 
+    #[inline]
     pub fn value(self) -> String {
         unsafe {
             let capacity = neon_runtime::string::utf8_len(self.to_raw());
@@ -324,10 +357,12 @@ impl JsString {
         }
     }
 
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Option<Handle<'a, JsString>> {
         JsString::new_internal(scope.isolate(), val)
     }
 
+    #[inline]
     pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> VmResult<Handle<'a, JsString>> {
         match JsString::new(scope, val) {
             Some(v) => Ok(v),
@@ -335,6 +370,7 @@ impl JsString {
         }
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>> {
         let (ptr, len) = match lower_str(val) {
             Some(pair) => pair,
@@ -356,12 +392,14 @@ pub trait ToJsString {
 }
 
 impl<'b> ToJsString for Handle<'b, JsString> {
+    #[inline]
     fn to_js_string<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, JsString> {
         Handle::new_internal(JsString::from_raw(self.to_raw()))
     }
 }
 
 impl<'b> ToJsString for &'b str {
+    #[inline]
     fn to_js_string<'a, T: Scope<'a>>(&self, scope: &mut T) -> Handle<'a, JsString> {
         match JsString::new_internal(scope.isolate(), self) {
             Some(s) => s,
@@ -371,6 +409,7 @@ impl<'b> ToJsString for &'b str {
 }
 
 // Lower a &str to the types expected by Node: a const *uint8_t buffer and an int32_t length.
+#[inline]
 fn lower_str(s: &str) -> Option<(*const u8, i32)> {
     // V8 currently refuses to allocate strings longer than `(1 << 20) - 16` bytes,
     // but in case this changes over time, just ensure the buffer isn't longer than
@@ -383,6 +422,7 @@ fn lower_str(s: &str) -> Option<(*const u8, i32)> {
     Some((s.as_ptr(), len as i32))
 }
 
+#[inline]
 fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
     lower_str(s).unwrap_or_else(|| {
         panic!("{} < i32::MAX", s.len())
@@ -397,10 +437,12 @@ fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
 pub struct JsInteger(raw::Local);
 
 impl JsInteger {
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, i: i32) -> Handle<'a, JsInteger> {
         JsInteger::new_internal(scope.isolate(), i)
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -409,17 +451,21 @@ impl JsInteger {
         }
     }
 
+    #[inline]
     pub fn is_u32(self) -> bool {
         unsafe {
             neon_runtime::primitive::is_u32(self.to_raw())
        }
     }
+
+    #[inline]
     pub fn is_i32(self) -> bool {
         unsafe {
             neon_runtime::primitive::is_i32(self.to_raw())
         }
     }
 
+    #[inline]
     pub fn value(self) -> i64 {
         unsafe {
             neon_runtime::primitive::integer_value(self.to_raw())
@@ -430,12 +476,15 @@ impl JsInteger {
 impl Value for JsInteger { }
 
 impl Managed for JsInteger {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsInteger(h) }
 }
 
 impl ValueInternal for JsInteger {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_integer(other.to_raw()) }
     }
@@ -447,10 +496,12 @@ impl ValueInternal for JsInteger {
 pub struct JsNumber(raw::Local);
 
 impl JsNumber {
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, v: f64) -> Handle<'a, JsNumber> {
         JsNumber::new_internal(scope.isolate(), v)
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -459,6 +510,7 @@ impl JsNumber {
         }
     }
 
+    #[inline]
     pub fn value(self) -> f64 {
         unsafe {
             neon_runtime::primitive::number_value(self.to_raw())
@@ -469,12 +521,15 @@ impl JsNumber {
 impl Value for JsNumber { }
 
 impl Managed for JsNumber {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsNumber(h) }
 }
 
 impl ValueInternal for JsNumber {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_number(other.to_raw()) }
     }
@@ -488,16 +543,20 @@ pub struct JsObject(raw::Local);
 impl Value for JsObject { }
 
 impl Managed for JsObject {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsObject(h) }
 }
 
 unsafe impl This for JsObject {
+    #[inline]
     fn as_this(h: raw::Local) -> Self { JsObject(h) }
 }
 
 impl ValueInternal for JsObject {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_object(other.to_raw()) }
     }
@@ -510,31 +569,37 @@ pub trait Key {
 }
 
 impl Key for u32 {
+    #[inline]
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         neon_runtime::object::get_index(out, obj, self)
     }
 
+    #[inline]
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         neon_runtime::object::set_index(out, obj, self, val)
     }
 }
 
 impl<'a, K: Value> Key for Handle<'a, K> {
+    #[inline]
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         neon_runtime::object::get(out, obj, self.to_raw())
     }
 
+    #[inline]
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         neon_runtime::object::set(out, obj, self.to_raw(), val)
     }
 }
 
 impl<'a> Key for &'a str {
+    #[inline]
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
         neon_runtime::object::get_string(out, obj, ptr, len)
     }
 
+    #[inline]
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
         neon_runtime::object::set_string(out, obj, ptr, len, val)
@@ -543,14 +608,17 @@ impl<'a> Key for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
+    #[inline]
     fn get<'a, T: Scope<'a>, K: Key>(self, _: &mut T, key: K) -> VmResult<Handle<'a, JsValue>> {
         build(|out| { unsafe { key.get(out, self.to_raw()) } })
     }
 
+    #[inline]
     fn get_own_property_names<'a, T: Scope<'a>>(self, _: &mut T) -> JsResult<'a, JsArray> {
         build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
     }
 
+    #[inline]
     fn set<K: Key, V: Value>(self, key: K, val: Handle<V>) -> VmResult<bool> {
         let mut result = false;
         if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
@@ -564,14 +632,17 @@ pub trait Object: Value {
 impl Object for JsObject { }
 
 impl JsObject {
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(_: &mut T) -> Handle<'a, JsObject> {
         JsObject::new_internal()
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>() -> Handle<'a, JsObject> {
         JsObject::build(|out| { unsafe { neon_runtime::object::new(out) } })
     }
 
+    #[inline]
     pub(crate) fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, JsObject> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -588,10 +659,12 @@ impl JsObject {
 pub struct JsArray(raw::Local);
 
 impl JsArray {
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, len: u32) -> Handle<'a, JsArray> {
         JsArray::new_internal(scope.isolate(), len)
     }
 
+    #[inline]
     pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -600,6 +673,7 @@ impl JsArray {
         }
     }
 
+    #[inline]
     pub fn to_vec<'a, T: Scope<'a>>(self, scope: &mut T) -> VmResult<Vec<Handle<'a, JsValue>>> {
         let mut result = Vec::with_capacity(self.len() as usize);
         let mut i = 0;
@@ -614,6 +688,7 @@ impl JsArray {
         }
     }
 
+    #[inline]
     pub fn len(self) -> u32 {
         unsafe {
             neon_runtime::array::len(self.to_raw())
@@ -624,12 +699,15 @@ impl JsArray {
 impl Value for JsArray { }
 
 impl Managed for JsArray {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsArray(h) }
 }
 
 impl ValueInternal for JsArray {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_array(other.to_raw()) }
     }
@@ -650,6 +728,7 @@ impl<T: Object> Object for JsFunction<T> { }
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
+#[inline]
 unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A>(scope: &mut S, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
     where A: Value + 'b
 {
@@ -663,6 +742,7 @@ unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A>(scope: &mut S, args: &mut [Handl
 }
 
 impl JsFunction {
+    #[inline]
     pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
         build(|out| {
             unsafe {
@@ -680,6 +760,7 @@ impl<C: Object> JsFunction<C> {
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
+        // FIXME: There has to be a better way than collecting to a Vec here...
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
         build(|out| {
@@ -693,6 +774,7 @@ impl<C: Object> JsFunction<C> {
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
+        // FIXME: There has to be a better way than collecting to a Vec here...
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
         build(|out| {
@@ -706,8 +788,10 @@ impl<C: Object> JsFunction<C> {
 impl<T: Object> Value for JsFunction<T> { }
 
 impl<T: Object> Managed for JsFunction<T> {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.raw }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self {
         JsFunction {
             raw: h,
@@ -717,6 +801,7 @@ impl<T: Object> Managed for JsFunction<T> {
 }
 
 impl<T: Object> ValueInternal for JsFunction<T> {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_function(other.to_raw()) }
     }

@@ -15,18 +15,22 @@ use neon_runtime::raw;
 pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(_: &mut T, size: u32) -> VmResult<Handle<'a, JsBuffer>> {
         build(|out| { unsafe { neon_runtime::buffer::new(out, size) } })
     }
 }
 
 impl Managed for JsBuffer {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsBuffer(h) }
 }
 
 impl ValueInternal for JsBuffer {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_buffer(other.to_raw()) }
     }
@@ -39,6 +43,7 @@ impl Object for JsBuffer { }
 impl<'a> Lock for &'a mut JsBuffer {
     type Internals = CMutSlice<'a, u8>;
 
+    #[inline]
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
         let mut result = mem::uninitialized();
         neon_runtime::buffer::data(&mut result, self.to_raw());
@@ -52,18 +57,22 @@ impl<'a> Lock for &'a mut JsBuffer {
 pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
+    #[inline]
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
         build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(scope.isolate()), size) } })
     }
 }
 
 impl Managed for JsArrayBuffer {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsArrayBuffer(h) }
 }
 
 impl ValueInternal for JsArrayBuffer {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_arraybuffer(other.to_raw()) }
     }
@@ -76,6 +85,7 @@ impl Object for JsArrayBuffer { }
 impl<'a> Lock for &'a mut JsArrayBuffer {
     type Internals = CMutSlice<'a, u8>;
 
+    #[inline]
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
         let mut result = mem::uninitialized();
         neon_runtime::arraybuffer::data(&mut result, self.to_raw());

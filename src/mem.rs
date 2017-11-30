@@ -1,6 +1,6 @@
 //! Types encapsulating _handles_ to managed JavaScript memory.
 //!
-//! 
+//!
 
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
@@ -27,12 +27,14 @@ pub struct Handle<'a, T: Managed + 'a> {
 }
 
 impl<'a, T: Value + 'a> Handle<'a, T> {
+    #[inline]
     pub fn lock(self) -> LockedHandle<'a, T> {
         LockedHandle::new(self)
     }
 }
 
 impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         unsafe { neon_runtime::mem::same_handle(self.to_raw(), other.to_raw()) }
     }
@@ -41,6 +43,7 @@ impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
 impl<'a, T: Managed + 'a> Eq for Handle<'a, T> { }
 
 impl<'a, T: Managed + 'a> Handle<'a, T> {
+    #[inline]
     pub(crate) fn new_internal(value: T) -> Handle<'a, T> {
         Handle {
             value: value,
@@ -55,14 +58,17 @@ impl<'a, T: Value> Handle<'a, T> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
 
+    #[inline]
     pub fn is_a<U: Value>(&self) -> bool {
         U::downcast(self.value).is_some()
     }
 
+    #[inline]
     pub fn downcast<U: Value>(&self) -> Option<Handle<'a, U>> {
         U::downcast(self.value).map(Handle::new_internal)
     }
 
+    #[inline]
     pub fn check<U: Value>(&self) -> JsResult<'a, U> {
         match U::downcast(self.value) {
             Some(v) => Ok(Handle::new_internal(v)),
@@ -73,12 +79,15 @@ impl<'a, T: Value> Handle<'a, T> {
 
 impl<'a, T: Managed> Deref for Handle<'a, T> {
     type Target = T;
+
+    #[inline]
     fn deref<'b>(&'b self) -> &'b T {
         &self.value
     }
 }
 
 impl<'a, T: Managed> DerefMut for Handle<'a, T> {
+    #[inline]
     fn deref_mut<'b>(&'b mut self) -> &'b mut T {
         &mut self.value
     }
@@ -91,16 +100,19 @@ pub struct LockedHandle<'a, T: Value + 'a>(Handle<'a, T>);
 unsafe impl<'a, T: Value + 'a> Sync for LockedHandle<'a, T> { }
 
 impl<'a, T: Value + 'a> LockedHandle<'a, T> {
+    #[inline]
     pub fn new(h: Handle<'a, T>) -> LockedHandle<'a, T> {
         LockedHandle(h)
     }
 
+    #[inline]
     pub fn unlock<'b, U: Scope<'b>>(self, _: &mut U) -> Handle<'a, T> { self.0 }
 }
 
 impl<'a, T: Value> Lock for LockedHandle<'a, T> {
     type Internals = LockedHandle<'a, T>;
 
+    #[inline]
     unsafe fn expose(self, _: &mut LockState) -> Self::Internals {
         self
     }

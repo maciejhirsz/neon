@@ -34,6 +34,7 @@ pub trait Scope<'a>: ScopeInternal {
     }
 }
 
+#[inline]
 fn ensure_active<T: ScopeInternal>(scope: &T) {
     if !*scope.active_cell().borrow() {
         panic!("illegal attempt to nest in inactive scope");
@@ -96,15 +97,17 @@ impl<'a> RootScope<'a> {
         }
 
         result
-        
+
     }
 }
 
 impl<'a> Scope<'a> for RootScope<'a> {
+    #[inline]
     fn nested<T, F: for<'inner> FnOnce(&mut NestedScope<'inner>) -> T>(&self, f: F) -> T {
         nest(self, f)
     }
 
+    #[inline]
     fn chained<T, F: for<'inner> FnOnce(&mut ChainedScope<'inner, 'a>) -> T>(&self, f: F) -> T {
         chain(self, f)
     }
@@ -129,8 +132,10 @@ extern "C" fn chained_callback<'a, T, P, F>(out: &mut Box<Option<T>>,
 }
 
 impl<'a> ScopeInternal for RootScope<'a> {
+    #[inline]
     fn isolate(&self) -> Isolate { self.isolate }
 
+    #[inline]
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
     }
@@ -197,36 +202,44 @@ extern "C" fn nested_callback<T, F>(out: &mut Box<Option<T>>,
 }
 
 impl<'a> Scope<'a> for NestedScope<'a> {
+    #[inline]
     fn nested<T, F: for<'inner> FnOnce(&mut NestedScope<'inner>) -> T>(&self, f: F) -> T {
         nest(self, f)
     }
 
+    #[inline]
     fn chained<T, F: for<'inner> FnOnce(&mut ChainedScope<'inner, 'a>) -> T>(&self, f: F) -> T {
         chain(self, f)
     }
 }
 
 impl<'a> ScopeInternal for NestedScope<'a> {
+    #[inline]
     fn isolate(&self) -> Isolate { self.isolate }
 
+    #[inline]
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
     }
 }
 
 impl<'a, 'outer> Scope<'a> for ChainedScope<'a, 'outer> {
+    #[inline]
     fn nested<T, F: for<'inner> FnOnce(&mut NestedScope<'inner>) -> T>(&self, f: F) -> T {
         nest(self, f)
     }
 
+    #[inline]
     fn chained<T, F: for<'inner> FnOnce(&mut ChainedScope<'inner, 'a>) -> T>(&self, f: F) -> T {
         chain(self, f)
     }
 }
 
 impl<'a, 'outer> ScopeInternal for ChainedScope<'a, 'outer> {
+    #[inline]
     fn isolate(&self) -> Isolate { self.isolate }
 
+    #[inline]
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
     }

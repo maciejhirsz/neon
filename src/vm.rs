@@ -31,10 +31,12 @@ pub(crate) mod internal {
     }
 
     impl LockState {
+        #[inline]
         pub fn new() -> LockState {
             LockState { buffers: HashSet::new() }
         }
 
+        #[inline]
         pub fn use_buffer(&mut self, buf: CMutSlice<u8>) {
             let p = buf.as_ptr() as usize;
             if !self.buffers.insert(p) {
@@ -47,16 +49,19 @@ pub(crate) mod internal {
     #[derive(Clone, Copy)]
     pub struct Isolate(*mut raw::Isolate);
 
+    #[inline]
     extern "C" fn drop_class_map(map: Box<ClassMap>) {
         mem::drop(map);
     }
 
     impl Isolate {
+        #[inline]
         pub(crate) fn to_raw(self) -> *mut raw::Isolate {
             let Isolate(ptr) = self;
             ptr
         }
 
+        #[inline]
         pub(crate) fn class_map(&mut self) -> &mut ClassMap {
             let mut ptr: *mut c_void = unsafe { neon_runtime::class::get_class_map(self.to_raw()) };
             if ptr.is_null() {
@@ -71,6 +76,7 @@ pub(crate) mod internal {
             unsafe { mem::transmute(ptr) }
         }
 
+        #[inline]
         pub(crate) fn current() -> Isolate {
             unsafe {
                 mem::transmute(neon_runtime::call::current_isolate())
@@ -102,16 +108,19 @@ pub(crate) struct ClassMap {
 }
 
 impl ClassMap {
+    #[inline]
     fn new() -> ClassMap {
         ClassMap {
             map: HashMap::new()
         }
     }
 
+    #[inline]
     pub fn get(&self, key: &TypeId) -> Option<&ClassMetadata> {
         self.map.get(key)
     }
 
+    #[inline]
     pub fn set(&mut self, key: TypeId, val: ClassMetadata) {
         self.map.insert(key, val);
     }
@@ -123,6 +132,7 @@ pub(crate) struct CallbackInfo {
 }
 
 impl CallbackInfo {
+    #[inline]
     pub fn data<'a>(&self) -> Handle<'a, JsValue> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -131,18 +141,21 @@ impl CallbackInfo {
         }
     }
 
+    #[inline]
     pub fn scope(&self) -> RootScope {
         RootScope::new(unsafe {
             mem::transmute(neon_runtime::call::get_isolate(mem::transmute(self)))
         })
     }
 
+    #[inline]
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
         unsafe {
             neon_runtime::call::set_return(&self.info, value.to_raw())
         }
     }
 
+    #[inline]
     pub fn as_call<'a, T: This>(&'a self, scope: &'a mut RootScope<'a>) -> FunctionCall<'a, T> {
         FunctionCall {
             info: self,
@@ -154,6 +167,7 @@ impl CallbackInfo {
         }
     }
 
+    #[inline]
     fn kind(&self) -> CallKind {
         if unsafe { neon_runtime::call::is_construct(mem::transmute(self)) } {
             CallKind::Construct
@@ -162,14 +176,22 @@ impl CallbackInfo {
         }
     }
 
+    #[inline]
     pub fn len(&self) -> i32 {
         unsafe {
             neon_runtime::call::len(&self.info)
         }
     }
 
+    #[inline]
+    fn defined(&self, i: i32) -> bool {
+        // Cast to u32 so we don't have to check negative values
+        (i as u32) < (self.len() as u32)
+    }
+
+    #[inline]
     pub fn get<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> Option<Handle<'b, JsValue>> {
-        if i < 0 || i >= self.len() {
+        if !self.defined(i) {
             return None;
         }
         unsafe {
@@ -179,8 +201,9 @@ impl CallbackInfo {
         }
     }
 
+    #[inline]
     pub fn require<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> JsResult<'b, JsValue> {
-        if i < 0 || i >= self.len() {
+        if !self.defined(i) {
             return JsError::throw(Kind::TypeError, "not enough arguments");
         }
         unsafe {
@@ -190,6 +213,7 @@ impl CallbackInfo {
         }
     }
 
+    #[inline]
     pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> raw::Local {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -198,6 +222,7 @@ impl CallbackInfo {
         }
     }
 
+    #[inline]
     pub fn callee<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, JsFunction> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -226,6 +251,7 @@ impl<'a> Module<'a> {
 }
 
 impl<'a> Module<'a> {
+    #[inline]
     pub fn export<T: Value>(&mut self, key: &str, f: fn(Call) -> JsResult<T>) -> VmResult<()> {
         let value = JsFunction::new(self.scope, f)?.upcast::<JsValue>();
         self.exports.set(key, value)?;
@@ -262,6 +288,7 @@ pub enum CallKind {
 }
 
 impl<'a, T: This> FunctionCall<'a, T> {
+    #[inline]
     pub fn kind(&self) -> CallKind { self.info.kind() }
 }
 
@@ -272,20 +299,25 @@ pub struct Arguments<'a, T> {
 }
 
 impl<'a, T: This> Arguments<'a, T> {
+    #[inline]
     pub fn len(&self) -> i32 { self.info.len() }
 
+    #[inline]
     pub fn get<'b, U: Scope<'b>>(&self, scope: &mut U, i: i32) -> Option<Handle<'b, JsValue>> {
         self.info.get(scope, i)
     }
 
+    #[inline]
     pub fn require<'b, U: Scope<'b>>(&self, scope: &mut U, i: i32) -> JsResult<'b, JsValue> {
         self.info.require(scope, i)
     }
 
+    #[inline]
     pub fn this<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, T> {
         Handle::new_internal(T::as_this(self.info.this(scope)))
     }
 
+    #[inline]
     pub fn callee<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, JsFunction> {
         self.info.callee(scope)
     }
@@ -311,6 +343,7 @@ pub(crate) trait Kernel<T: Clone + Copy + Sized>: Sized {
 
     /// Exports the kernel as a pair consisting of the static callback function
     /// and the kernel function, both converted to raw void pointers.
+    #[inline]
     fn export(self) -> (*mut c_void, *mut c_void) {
         unsafe {
             (mem::transmute(Self::callback as usize), self.as_ptr())
@@ -321,6 +354,7 @@ pub(crate) trait Kernel<T: Clone + Copy + Sized>: Sized {
 pub trait Lock: Sized {
     type Internals;
 
+    #[inline]
     fn grab<F, T>(self, f: F) -> T
         where F: FnOnce(Self::Internals) -> T + Send
     {
@@ -337,6 +371,7 @@ impl<T, U> Lock for (T, U)
 {
     type Internals = (T::Internals, U::Internals);
 
+    #[inline]
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
         (self.0.expose(state), self.1.expose(state))
     }

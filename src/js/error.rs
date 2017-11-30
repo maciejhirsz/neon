@@ -11,6 +11,7 @@ use js::internal::ValueInternal;
 use mem::{Handle, Managed};
 use scope::Scope;
 
+#[inline]
 pub fn throw<'a, T: Value, U>(v: Handle<'a, T>) -> VmResult<U> {
     unsafe {
         neon_runtime::error::throw(v.to_raw());
@@ -23,12 +24,15 @@ pub fn throw<'a, T: Value, U>(v: Handle<'a, T>) -> VmResult<U> {
 pub struct JsError(raw::Local);
 
 impl Managed for JsError {
+    #[inline]
     fn to_raw(self) -> raw::Local { self.0 }
 
+    #[inline]
     fn from_raw(h: raw::Local) -> Self { JsError(h) }
 }
 
 impl ValueInternal for JsError {
+    #[inline]
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_error(other.to_raw()) }
     }
@@ -46,16 +50,20 @@ pub enum Kind {
     SyntaxError
 }
 
+#[inline]
 fn message(msg: &str) -> CString {
     CString::new(msg).ok().unwrap_or_else(|| { CString::new("").ok().unwrap() })
 }
 
 impl JsError {
+    #[inline]
     pub fn new<'a, T: Scope<'a>, U: ToJsString>(scope: &mut T, kind: Kind, msg: U) -> VmResult<Handle<'a, JsError>> {
         let msg = msg.to_js_string(scope);
         build(|out| {
             unsafe {
                 let raw = msg.to_raw();
+
+                // FIXME: `Kind` can be a trait to avoid checking things on runtime
                 match kind {
                     Kind::Error          => neon_runtime::error::new_error(out, raw),
                     Kind::TypeError      => neon_runtime::error::new_type_error(out, raw),
@@ -68,10 +76,13 @@ impl JsError {
         })
     }
 
+    #[inline]
     pub fn throw<T>(kind: Kind, msg: &str) -> VmResult<T> {
         let msg = &message(msg);
         unsafe {
             let ptr = mem::transmute(msg.as_ptr());
+
+            // FIXME: `Kind` can be a trait to avoid checking things on runtime
             match kind {
                 Kind::Error          => neon_runtime::error::throw_error_from_cstring(ptr),
                 Kind::TypeError      => neon_runtime::error::throw_type_error_from_cstring(ptr),

@@ -37,6 +37,7 @@ pub struct HandleScope {
 }
 
 impl HandleScope {
+    #[inline]
     pub fn new() -> HandleScope { unsafe { mem::zeroed() } }
 }
 
@@ -55,5 +56,6 @@ pub struct EscapableHandleScope {
 }
 
 impl EscapableHandleScope {
+    #[inline]
     pub fn new() -> EscapableHandleScope { unsafe { mem::zeroed() } }
 }
