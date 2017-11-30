@@ -54,13 +54,14 @@ impl<'a, T: Managed + 'a> Handle<'a, T> {
 
 impl<'a, T: Value> Handle<'a, T> {
     // This method does not require a scope because it only copies a handle.
+    #[inline]
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
 
     #[inline]
     pub fn is_a<U: Value>(&self) -> bool {
-        U::downcast(self.value).is_some()
+        U::is_typeof(self.value)
     }
 
     #[inline]

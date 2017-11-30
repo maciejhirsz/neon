@@ -30,6 +30,7 @@ pub(crate) mod internal {
     pub trait ValueInternal: Managed {
         fn is_typeof<Other: Value>(other: Other) -> bool;
 
+        #[inline]
         fn downcast<Other: Value>(other: Other) -> Option<Self> {
             if Self::is_typeof(other) {
                 Some(Self::from_raw(other.to_raw()))
@@ -38,6 +39,7 @@ pub(crate) mod internal {
             }
         }
 
+        #[inline]
         fn cast<'a, T: Value, F: FnOnce(raw::Local) -> T>(self, f: F) -> Handle<'a, T> {
             Handle::new_internal(f(self.to_raw()))
         }
@@ -74,6 +76,7 @@ pub(crate) mod internal {
     }
 }
 
+#[inline]
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
     unsafe {
         let mut local: raw::Local = mem::zeroed();
@@ -760,7 +763,6 @@ impl<C: Object> JsFunction<C> {
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        // FIXME: There has to be a better way than collecting to a Vec here...
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
         build(|out| {
@@ -774,7 +776,6 @@ impl<C: Object> JsFunction<C> {
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        // FIXME: There has to be a better way than collecting to a Vec here...
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
         build(|out| {

@@ -1,6 +1,7 @@
+#[cfg(feature = "convert_panics")]
+use std::panic::{UnwindSafe, catch_unwind};
 use std::mem;
 use std::ffi::CString;
-use std::panic::{UnwindSafe, catch_unwind};
 
 use neon_runtime;
 use neon_runtime::raw;
@@ -56,14 +57,12 @@ fn message(msg: &str) -> CString {
 }
 
 impl JsError {
-    #[inline]
     pub fn new<'a, T: Scope<'a>, U: ToJsString>(scope: &mut T, kind: Kind, msg: U) -> VmResult<Handle<'a, JsError>> {
         let msg = msg.to_js_string(scope);
         build(|out| {
             unsafe {
                 let raw = msg.to_raw();
 
-                // FIXME: `Kind` can be a trait to avoid checking things on runtime
                 match kind {
                     Kind::Error          => neon_runtime::error::new_error(out, raw),
                     Kind::TypeError      => neon_runtime::error::new_type_error(out, raw),
@@ -76,13 +75,11 @@ impl JsError {
         })
     }
 
-    #[inline]
     pub fn throw<T>(kind: Kind, msg: &str) -> VmResult<T> {
         let msg = &message(msg);
         unsafe {
             let ptr = mem::transmute(msg.as_ptr());
 
-            // FIXME: `Kind` can be a trait to avoid checking things on runtime
             match kind {
                 Kind::Error          => neon_runtime::error::throw_error_from_cstring(ptr),
                 Kind::TypeError      => neon_runtime::error::throw_type_error_from_cstring(ptr),
@@ -95,6 +92,7 @@ impl JsError {
     }
 }
 
+#[cfg(feature = "convert_panics")]
 pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> VmResult<T>>(f: F) -> VmResult<T> {
     match catch_unwind(|| { f() }) {
         Ok(result) => result,
@@ -109,4 +107,11 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> VmResult<T>>(f: F) -
             JsError::throw::<T>(Kind::Error, &msg[..])
         }
     }
+}
+
+// Allow users to opt-out of converting panics for some performance boost
+#[cfg(not(feature = "convert_panics"))]
+#[inline]
+pub(crate) fn convert_panics<T, F: FnOnce() -> VmResult<T>>(f: F) -> VmResult<T> {
+    f()
 }

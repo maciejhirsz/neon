@@ -251,7 +251,6 @@ impl<'a> Module<'a> {
 }
 
 impl<'a> Module<'a> {
-    #[inline]
     pub fn export<T: Value>(&mut self, key: &str, f: fn(Call) -> JsResult<T>) -> VmResult<()> {
         let value = JsFunction::new(self.scope, f)?.upcast::<JsValue>();
         self.exports.set(key, value)?;
